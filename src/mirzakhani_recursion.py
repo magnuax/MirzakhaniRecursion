@@ -260,14 +260,13 @@ class WeilPetersonCalculator(WeilPetersonTable):
         terms = sp.Add.make_args(integrand.expand())
         result = sp.Float(0)
 
+        k = sp.Wild("k")                   # power in x^(2k-1)
+        t = sp.Wild("t")                   # argument of H
+        c = sp.Wild("c", exclude=(x,))     # constant coefficient of integrand
+        H = self._H(x, t)
+        sub_expr = c*self.x**(2*k - 1) * H
+                
         for term in terms:
-            
-            k = sp.Wild("k")                   # power in x^(2k-1)
-            t = sp.Wild("t")                   # argument of H
-            c = sp.Wild("c", exclude=(x,))     # constant coefficient of integrand
-            H = self._H(x, t)
-                    
-            sub_expr = c*self.x**(2*k - 1) * H
             match = term.match(sub_expr)
             
             if match and match[k].is_Number:
@@ -289,38 +288,31 @@ class WeilPetersonCalculator(WeilPetersonTable):
         terms = sp.Add.make_args(integrand.expand())
         result = sp.Float(0)
         
-        for term in terms:
-            a = sp.Wild("a")                        # power in x^(2a-1)
-            b = sp.Wild("b")                        # power in y^(2b-1)
-            t = sp.Wild("t")                        # 2nd argument of H
-            c = sp.Wild("c", exclude=(x, y))        # constant coefficient integrand
-            H = self._H(x + y, t)
+        a = sp.Wild("a")                        # power in x^(2a-1)
+        b = sp.Wild("b")                        # power in y^(2b-1)
+        t = sp.Wild("t")                        # 2nd argument of H
+        c = sp.Wild("c", exclude=(x, y))        # constant coefficient integrand
+        H = self._H(x + y, t)
+        sub_expr = c * x**(2*a-1) * y**(2*b-1) * H
         
-            sub_expr = c * x**(2*a-1) * y**(2*b-1) * H
+        for term in terms:
             match = term.match(sub_expr)
 
             if match and match[a].is_Number and match[b].is_Number:
-                a = int(match[a])
-                b = int(match[b])
-                t = match[t]
-                c = match[c]
+                _a = int(match[a])
+                _b = int(match[b])
+                _t = match[t]
+                _c = match[c]
                 
-                F_coeff  = self.factorial(2*a - 1)
-                F_coeff *= self.factorial(2*b - 1)
-                F_coeff /= self.factorial(2*a + 2*b - 1)            
-                new = c*F_coeff*self.F(a+b, t)
+                F_coeff  = self.factorial(2*_a - 1)
+                F_coeff *= self.factorial(2*_b - 1)
+                F_coeff /= self.factorial(2*_a + 2*_b - 1)            
+                new = _c*F_coeff*self.F(_a + _b, _t)
                 result += new
             else:
                 logger.warning(f"Unmatched term in double integral: {term}")
                 logger.warning(f"Matched: {match}")
             
-            logger.debug(f"--------------------------------")
-            logger.debug(f"Matched term: {term}")
-            logger.debug(f"Matched: {match}")
-            logger.debug(f"Result: {new}")
-            logger.debug(f"--------------------------------")            
-
-        logger.debug(f"FINAL RESULT: {result.expand()}")
         return result
     
     def _calculate_derivative(self, n, g):#, L_list):

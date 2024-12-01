@@ -53,6 +53,7 @@ if args.display:
     table.display_table()
 
 if not args.genus and not args.boundaries:
+    logging.warning("No (g,n) specified. Exiting.")
     logging.info("Session finished.\n    ___________\n")
     exit()
 
