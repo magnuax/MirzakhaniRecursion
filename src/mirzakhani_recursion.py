@@ -370,9 +370,6 @@ class WeilPetersonCalculator(WeilPetersonTable):
             else:
                 V = integrand/2
 
-            if n==0:
-                V = sp.integrate(V, (L1, 0, sp.pi))/()
-            
             T1 = time.time()
             logger.info(f"  (took  {T1-T0:.2f} s)")
 
