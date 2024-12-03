@@ -25,17 +25,12 @@ class WeilPetersonTable:
     def _check_table(self, g, n):
         try:
             V = self.table[f"g={g}"][f"n={n}"]
-            
             if V is None:
-                found = False
+                return V, False
             else:
-                found = True
+                return V, True
             
-            logger.info(f"⋅ checking table: V_({g},{n}) - {found}")
-            return V, True
-        
         except KeyError:
-            logger.info(f"⋅ checking table: V_({g},{n}) - {False}")
             return None, False
     
     def _add_to_table(self, g, n, V):
@@ -338,7 +333,7 @@ class WeilPetersonCalculator(WeilPetersonTable):
         V, found = self._check_table(g, n)
         
         if not found:
-            logger.info(f"⋅ computing V_({g},{n})")
+            logger.info(f"Not found in table: V_({g},{n}) - calculating...")
             T0 = time.time()
             
             if 2*g + n <= 3:
