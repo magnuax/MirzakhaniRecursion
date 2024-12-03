@@ -78,6 +78,9 @@ def test_V12(instance):
     
     expected = (m2/192 + m11/96 + m1*sp.pi**2/12 +sp.pi**4 / 4).expand()
     computed = instance(g=1, n=2)
+    
+    #print(expected)
+    #print(computed)
     assert computed.equals(expected), "Test failed for (g,n) = (1,2)"
 
 def test_V14(instance):
@@ -103,6 +106,7 @@ def test_V14(instance):
 def test_calculator():
     TEST_PATH = Path(__file__).parent
     tester = WeilPetersonCalculator(pickled_table = TEST_PATH / "test_table.pkl")
+    
     test_V06(tester)
     test_V05(tester)
     test_V04(tester)

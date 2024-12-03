@@ -1,19 +1,7 @@
 import itertools
 import sympy as sp
 
-def unique_partitions(lst):
-    """
-    Generate unique unordered partitions of a list into two non-empty subsets.
-    """
-    partitions = []
-    for i in range(1, len(lst)):
-        for subset in itertools.combinations(lst, i):
-            complement = tuple((set(lst) - set(subset)))
-            yield (tuple((subset)), complement)
-            #partitions.append( tuple([tuple(subset), tuple(complement)]) )
-            #eturn partitions
-            
-def partitions(L_list):
+def all_bipartitions(L_list):
     """
     Generate all possible partitions of L_list into two non-empty subsets.    
     
@@ -22,10 +10,10 @@ def partitions(L_list):
     Yields:
     - Tuple of two lists (L_I, L_J)
     """
+    
     indices = list(range(len(L_list)))
-
     partitions = []
-    for k in range(0, len(L_list)):
+    for k in range(0, len(L_list)+1):
         for I_indices in itertools.combinations(indices, k):
             J_indices = [idx for idx in indices if idx not in I_indices]
             

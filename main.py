@@ -34,9 +34,14 @@ parser.add_argument("-d", "--display"   , type=str , default=False)
 parser.add_argument("-v", "--verbose"   , type=bool, default=True)
 parser.add_argument("-s", "--save"      , type=bool, default=True)
 parser.add_argument("-new", "--new"     , type=str , default=False)
-
+parser.add_argument("-init", "--initialize", type=str, default=False)
 
 args = parser.parse_args()
+
+if args.initialize:
+    table = WeilPetersonTable(DATA_PATH/args.input)
+    table.initialize_table(args.initialize)
+    exit()
 
 if args.test:
     import test.test_functions as test
@@ -49,7 +54,7 @@ if args.new:
     table.initialize_table(args.new)
     
 if args.display:
-    table = WeilPetersonTable(args.display)
+    table = WeilPetersonTable(DATA_PATH/args.display)
     table.display_table()
 
 if not args.genus and not args.boundaries:
@@ -77,7 +82,7 @@ if args.run:
 
     if args.save or args.output:
         if args.output:
-            calculator.save_table(args.output)
+            calculator.save_table(DATA_PATH/args.output)
 
         else:
             from datetime import datetime

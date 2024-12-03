@@ -27,19 +27,25 @@ class WeilPetersonTable:
             V = self.table[f"g={g}"][f"n={n}"]
             
             if V is None:
-                return None, False
+                found = False
             else:
-                return V, True
+                found = True
+            
+            logger.info(f"⋅ checking table: V_({g},{n}) - {found}")
+            return V, True
         
         except KeyError:
+            logger.info(f"⋅ checking table: V_({g},{n}) - {False}")
             return None, False
     
     def _add_to_table(self, g, n, V):
         key_g = f"g={g}"
         key_n = f"n={n}"
+        
         if key_g not in self.table.keys():
             self.table[key_g] = {}
         self.table[key_g][key_n] = V
+        
         logger.info(f"⋅ stored to table: V_({g},{n})")
         
     def initialize_table(self, filename="Weil-Peterson-base.pkl"):
@@ -67,7 +73,7 @@ class WeilPetersonTable:
         print()
         
 class WeilPetersonCalculator(WeilPetersonTable):
-    def __init__(self, pickled_table="Weil-Peterson-base.pkl", exact=True):
+    def __init__(self, pickled_table, exact=True):
         super().__init__(pickled_table)
         self.x = sp.Symbol("x", positive=True)      # integration variables
         self.y = sp.Symbol("y", positive=True)      # integration variables
@@ -95,7 +101,6 @@ class WeilPetersonCalculator(WeilPetersonTable):
             sum += term.expand()
         
         sum *= self.factorial(2*k-1)
-        
         return sum
     
     def _H(self, x, y):
@@ -104,13 +109,7 @@ class WeilPetersonCalculator(WeilPetersonTable):
         """    
         return sp.Function("H")(x, y)
     
-    def m(self, g, n):
-        if (g,n) == (1,1):
-            return 1
-        else:
-            return 0
-        
-    def _compute_term_1(self, n, g):
+    def _compute_term_1(self, g, n):
         """
         requires n≧1 and g≧1, so that 2g+n-1>2 for contributions to exist
         """
@@ -122,7 +121,6 @@ class WeilPetersonCalculator(WeilPetersonTable):
 
         if not found:
             V = self.calculate_V(g-1, n+1)
-        
            
         L1 = self.L_list[0]
         x = self.x
@@ -133,8 +131,6 @@ class WeilPetersonCalculator(WeilPetersonTable):
         logger.debug(f"V_({g-1},{n+1}) = {V}")
         
         V = V.subs({L1: x, self.L_list[n]: y})
-        #V = V.subs({L1: x, self.L_list[1]: y})
-        #V = V.subs({old: new for old, new in zip(self.L_list[2:], self.L_list[2:n+1])}, simultaneous=True)
         logger.debug(f"subbed: {V}")
         logger.debug(f"----------------------")
         logger.debug(f"INTEGRATING TERM 1 ({g},{n})")
@@ -146,13 +142,10 @@ class WeilPetersonCalculator(WeilPetersonTable):
             integrand = x * y * self._H(x + y, sp.pi) * V.subs({L1: sp.pi})
         """
         term1  = self._double_integral(integrand, x, y)
-        #print(g,n)
-        #print(self.m(g-1,n+1))
-        #term1 /= 2**self.m(g-1, n+1)
              
         return term1
     
-    def _compute_term_2(self, n, g):
+    def _compute_term_2(self, g, n):
         """
         Computes the third (surface-splitting) term in Mirzakhani"s recursion.
         Splits the surface into two surfaces of genus g₁ & g₂ with n₁ & n₂ boundaries, such that g₁+g₂=g and n₁-n₂= n+1.
@@ -164,7 +157,6 @@ class WeilPetersonCalculator(WeilPetersonTable):
         """
         if g<0: #or n<2:
             return sp.Integer(0)
-        
         if 2*g + n  < 3:
             return sp.Integer(0)
         
@@ -172,25 +164,22 @@ class WeilPetersonCalculator(WeilPetersonTable):
         y = self.y
         L1 = self.L_list[0]
 
-        partitions = utils.partitions(self.L_list[1:n])
-        #print(partition for partition in partitions)
-        #print(self.L_list[1:n])
+        partitions = utils.all_bipartitions(self.L_list[1:n])
+
         integrand = sp.Integer(0)
-        
         for g1 in range(0, g+1):
             g2 = g - g1
             for L_I, L_J in partitions:
                 n1 = len(L_I)
                 n2 = len(L_J)
-                
-                """
+                       
+                # Sanity check the partitions: 
                 if set(L_I).intersection(L_J) != set():
                     logger.warning(f"Overlapping boundaries in partition: {L_I}, {L_J}")
-
                 if set(L_I).union(L_J) != set(self.L_list[1:n]):
                     logger.warning(f"Partition does not cover all boundaries: {L_I}, {L_J}")
-                """
                 
+                # Compute V₁ and V₂:
                 if (2*g1 + n1 >= 2) and (2*g2 + n2 >= 2):
                     V1, found1 = self._check_table(g1, n1+1)
                     V2, found2 = self._check_table(g2, n2+1)
@@ -201,22 +190,18 @@ class WeilPetersonCalculator(WeilPetersonTable):
                     if not found2:
                         V2 = self.calculate_V(g2, n2+1)
                     
-                    V1 *= 2**self.m(g1, n1+1)
-                    V2 *= 2**self.m(g2, n2+1)
-                    
                     V1 = V1.subs({L1: x})      
                     V1 = V1.subs({old: new for old, new in zip(self.L_list[1:n1+1], L_I)}, simultaneous=True)
                     V2 = V2.subs({L1: y})                        
                     V2 = V2.subs({old: new for old, new in zip(self.L_list[1:n2+1], L_J)}, simultaneous=True)
-                    
                         
                     integrand += x*y*self._H(x + y, L1) * V1 * V2
-                
+
         term2 = self._double_integral(integrand, x, y)
         
         return term2
     
-    def _compute_term_3(self, n, g):
+    def _compute_term_3(self, g, n):
         """
         Computes the third term in Mirzakhani's recursion.
 
@@ -248,7 +233,7 @@ class WeilPetersonCalculator(WeilPetersonTable):
             integrand += x *(self._H(x, L1 + Lk) + self._H(x, L1 - Lk)) * V_temp
         
         term3 = self._single_integral(integrand, x) 
-        #term3 /= 2**self.m(g, n-1)
+        
         return term3
         
     def _single_integral(self, integrand, x):
@@ -315,60 +300,68 @@ class WeilPetersonCalculator(WeilPetersonTable):
             
         return result
     
-    def _calculate_derivative(self, n, g):#, L_list):
+    def _apply_mirzakhanis_recursion(self, g, n):#, L_list):
         """
         Computes sum A + Ad + B for Mirzakhani"s recursion
         """
-        
-        if 2*g - 2 + n < 0:
+        if 2 - 2*g - n > 0:
             logger.warning(f"({g},{n}) - Invalid input")
             return sp.Integer(0)
-            """
-            elif (g,n) == (0,3):
-                return sp.Integer(2)
-
-            elif (g,n) == (1,1):
-                return (3*L_list[0]**2 + 2*sp.pi**2) / 24
-            """
+        
         else:
-            term1 = self._compute_term_1(n, g)    
-            term2 = self._compute_term_2(n, g)
-            term3 = self._compute_term_3(n, g)
+            term1 = self._compute_term_1(g, n)    
+            term2 = self._compute_term_2(g, n)
+            term3 = self._compute_term_3(g, n)
             
             logger.debug(f"({g},{n}) TERM1: {term1}")
             logger.debug(f"({g},{n}) TERM2: {term2}")
             logger.debug(f"({g},{n}) TERM3: {term3}")
             
-            
             return term1 + term2 + term3
 
-    def calculate_V(self, g, n):#, L_list):
-        key_g = f"g={g}"
-        key_n = f"n={n}"
-        V, found = self._check_table(g, n)
-        logger.info(f"⋅ checking table: V_({g},{n}) - {found}")
-
+    def _apply_dilaton_equation(self, g, n=0):
+        """
+        Applies the dilaton equation to compute V_(g,n):
+        (See Corollary 23 of Do's paper)
+        """
+        V_next, found = self._check_table(g, n+1)
+        
         if not found:
-            # Compute the derivative
+            V_next = self.calculate_V(g, n+1)
+        
+        dilaton_lhs = V_next.diff(self.L_list[n]).subs({self.L_list[n]: 2*sp.pi*sp.I})
+        
+        V = dilaton_lhs / (2*sp.pi*sp.I* (2*g - 2 + n) )
+        return V        
+    
+    def calculate_V(self, g, n):#, L_list):
+        V, found = self._check_table(g, n)
+        
+        if not found:
+            logger.info(f"⋅ computing V_({g},{n})")
             T0 = time.time()
-            logger.info(f"⋅ computing derivative: V_({g},{n})")
+            
+            if 2*g + n <= 3:
+                V = sp.Integer(0)
+                
+            # Apply dilaton equation if n=0
+            elif n==0:
+                logger.info(f". Applying Dilaton equation...")
+                V = self._apply_dilaton_equation(g, n)
 
-            integrand = self._calculate_derivative(n, g)
-
-            T1 = time.time()
-            logger.info(f"  (took  {T1-T0:.2f} s)")
-            
-            # Perform final integral
-            T0 = time.time()
-            logger.info(f"⋅ integrating...")
-            integrand = integrand.expand()
-            
-            
-            if self.L_list:
-                L1 = self.L_list[0]
-                V = sp.integrate(integrand, L1) / ( 2*L1 )
+            # Otherwise, use Mirzakhani's recursion
             else:
-                V = integrand/2
+                logger.info(f"⋅ Applying Mirzakhani's recursion...")
+                integrand = self._apply_mirzakhanis_recursion(g, n)
+                integrand = integrand.expand()
+                
+                T1 = time.time()
+                logger.info(f"  (took  {T1-T0:.2f} s)")
+                T0 = time.time()
+                logger.info(f"⋅ Integrating result...")
+
+                L1 = self.L_list[0]
+                V  = sp.integrate(integrand, L1) / ( 2*L1 )
 
             T1 = time.time()
             logger.info(f"  (took  {T1-T0:.2f} s)")
@@ -389,16 +382,14 @@ class WeilPetersonCalculator(WeilPetersonTable):
         :returns: computed term
         :rtype: sp.Expr
         """
-        self.T0 = time.time()
+        T0 = time.time()
         logger.info(f"Starting recursion for V_({g},{n})")
-        no_variables = 3*g + n           
-        self.L_list = [sp.Symbol(f"L{i}", positive=True) for i in range(1, no_variables+1)]
+
+        self.L_list = [sp.Symbol(f"L{i}", positive=True) for i in range(1, 3*g + n+1)]
         V = self.calculate_V(g, n)
-        print(40*" "+"\r", end="")                
         
-        self.T1 = time.time()
-        dt = self.T1 - self.T0
-        logger.info(f"Finished recursion for V_({g},{n}) - {dt} s")
+        T1 = time.time()
+        logger.info(f"Finished recursion for V_({g},{n}) - {T1-T0} s")
         
         return V
     
