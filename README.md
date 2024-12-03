@@ -1,10 +1,11 @@
 # MirzakhaniRecursion
  
  
-Implements a recursive algorithm for calculating Weil-Peterson volumes, using Mirzakhani's recursion relations (see [1]). Probably not the most efficient solution, but it was a fun project.
+Implements a recursive algorithm for calculating Weil-Peterson volumes, using Mirzakhani's recursion relations (see [1]). 
+Mostly following the procedure shown in section 4. of [2]. For the cases with no boundaries, the Dilaton equation is used instead (Theorem 22 in [2]).
+Probably not the most efficient implementation, but it works and it was a fun project.
 
-
-## The Recursion Relation
+## Mirzakhani's Recursion Relation
 For genus $g$ and $n$ boundary components with lengths $L_1, ..., L_n$, we denote the Weil-Peterson volume by $V_{g,n}(L_1,...,L_n)$. Using the base cases
 
 * $V_{0,1} = 0$
@@ -27,9 +28,19 @@ Where $\hat{L} = (L_2, L_3, \ldots, L_n)$, $L_I = (L_{i_1}, L_{i_2}, \ldots, L_{
 ```math
 H(x, y) = \frac{1}{1 + \exp\left(\frac{x+y}{2}\right)} + \frac{1}{1 + \exp\left(\frac{x-y}{2}\right)}.
 ```
-## ToDo:
-- Not working for $g>2$ due to problems with $V_{2,0}$.
-- Fix this readme
 
+## The Dilaton equation
+```math
+\frac{\partial V_{g,n+1}}{\partial L_{n+1}}(L,2\pi i ) = 2\pi i (2g-2+n) V_{g,n}(L)	
+```
+
+## ToDo:
+- Fix this readme
+- Prettier code
+- Make more efficient
+- Better documentation
 ## References
  [1] Mirzakhani, M. Simple geodesics and Weil-Petersson volumes of moduli spaces of bordered Riemann surfaces. Invent. math. 167, 179–222 (2007). https://doi.org/10.1007/s00222-006-0013-2
+ \
+ [2] N. Do, Moduli spaces of hyperbolic surfaces and their WeilPetersson volumes. [arXiv:1103.4674.](https://doi.org/10.48550/arXiv.1103.4674) 
+
