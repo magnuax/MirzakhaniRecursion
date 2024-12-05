@@ -16,6 +16,7 @@ class WeilPetersonTable:
         logger.info(f"Loading table from <{filename}>.")
         with open(filename, "rb") as file:
             self.table = pickle.load(file)
+        logger.info(f"Table loaded.")
         
     def save_table(self, filename):
         logger.info(f"Saving table to <{filename}>.")
@@ -47,10 +48,10 @@ class WeilPetersonTable:
         L1 = sp.Symbol("L1", positive=True)
 
         V_table = {
-            "g=0": {"n=3": sp.Integer(1), 
-                    "n=2": sp.Integer(0), 
-                    "n=1": sp.Integer(0)},
-            "g=1": {"n=1": L1**2 / 48 + sp.pi**2 / 12}}
+            "g=0": {"n=3": sp.Poly(sp.Integer(1), L1), 
+                    "n=2": sp.Poly(sp.Integer(0), L1), 
+                    "n=1": sp.Poly(sp.Integer(0), L1)},
+            "g=1": {"n=1": sp.Poly(L1**2 / 48 + sp.pi**2 / 12)}}
 
         with open(filename, "wb") as f:
             pickle.dump(V_table, f)
@@ -77,7 +78,9 @@ class WeilPetersonCalculator(WeilPetersonTable):
         if self.exact:
             self.factorial = sp.factorial
             self.zeta = sp.zeta
+            self.domain = "QQ"
         else:
+            self.domain = "RR"
             self.factorial = scipy.special.factorial
             self.zeta = scipy.special.zeta
     
@@ -130,12 +133,7 @@ class WeilPetersonCalculator(WeilPetersonTable):
         logger.debug(f"----------------------")
         logger.debug(f"INTEGRATING TERM 1 ({g},{n})")
         
-        integrand = x * y * self._H(x + y, L1) * V
-        """
-        if n==0:
-            V, found = self._check_table(g-1, n+1)
-            integrand = x * y * self._H(x + y, sp.pi) * V.subs({L1: sp.pi})
-        """
+        integrand = x * y * self._H(x + y, L1) * V.as_expr()
         term1  = self._double_integral(integrand, x, y)
              
         return term1
@@ -190,7 +188,7 @@ class WeilPetersonCalculator(WeilPetersonTable):
                     V2 = V2.subs({L1: y})                        
                     V2 = V2.subs({old: new for old, new in zip(self.L_list[1:n2+1], L_J)}, simultaneous=True)
                         
-                    integrand += x*y*self._H(x + y, L1) * V1 * V2
+                    integrand += x*y*self._H(x + y, L1) * V1.as_expr() * V2.as_expr()
 
         term2 = self._double_integral(integrand, x, y)
         
@@ -219,7 +217,7 @@ class WeilPetersonCalculator(WeilPetersonTable):
         L1 = self.L_list[0]
         Ln = self.L_list[n-1]
         integrand = sp.Integer(0)
-
+        V = V.as_expr()
         for k in range(1, n):
             Lk = self.L_list[k]
             Lk_hat = list(self.L_list[:n].copy())
@@ -239,7 +237,7 @@ class WeilPetersonCalculator(WeilPetersonTable):
             return 0
         terms = sp.Add.make_args(integrand.expand())
         result = sp.Float(0)
-
+    
         k = sp.Wild("k")                   # power in x^(2k-1)
         t = sp.Wild("t")                   # argument of H
         c = sp.Wild("c", exclude=(x,))     # constant coefficient of integrand
@@ -295,7 +293,7 @@ class WeilPetersonCalculator(WeilPetersonTable):
             
         return result
     
-    def _apply_mirzakhanis_recursion(self, g, n):#, L_list):
+    def _apply_mirzakhanis_recursion(self, g, n):
         """
         Computes sum A + Ad + B for Mirzakhani"s recursion
         """
@@ -335,34 +333,35 @@ class WeilPetersonCalculator(WeilPetersonTable):
         if not found:
             logger.info(f"Not found in table: V_({g},{n}) - calculating...")
             T0 = time.time()
-            
+            L1 = self.L_list[0]
+
             if 2*g + n <= 3:
-                V = sp.Integer(0)
+                V = sp.Poly(sp.Integer(0), L1, domain=self.domain)
                 
             # Apply dilaton equation if n=0
             elif n==0:
                 logger.info(f". Applying Dilaton equation...")
-                V = self._apply_dilaton_equation(g, n)
+                V = sp.Poly(self._apply_dilaton_equation(g, n), domain=self.domain)
 
             # Otherwise, use Mirzakhani's recursion
             else:
                 logger.info(f"⋅ Applying Mirzakhani's recursion...")
-                integrand = self._apply_mirzakhanis_recursion(g, n)
-                integrand = integrand.expand()
+                integrand = sp.Poly(self._apply_mirzakhanis_recursion(g, n), domain=self.domain)
+                integrand = integrand
                 
                 T1 = time.time()
                 logger.info(f"  (took  {T1-T0:.2f} s)")
                 T0 = time.time()
                 logger.info(f"⋅ Integrating result...")
 
-                L1 = self.L_list[0]
-                V  = sp.integrate(integrand, L1) / ( 2*L1 )
+                V, remainder = sp.div(integrand.integrate(L1), 2*L1)#.div(2*L1)# / (2*L1)#sp.integrate(integrand, L1) / ( 2*L1 )
+
+                if remainder:
+                    logger.warning(f"CRITICAL ERROR - ({g},{n}) Remainder in division: {remainder}")
 
             T1 = time.time()
             logger.info(f"  (took  {T1-T0:.2f} s)")
 
-            # Expand & add to table            
-            V = V.expand()
             self._add_to_table(g, n, V)
         return V
         

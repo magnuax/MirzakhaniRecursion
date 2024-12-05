@@ -35,7 +35,8 @@ def test_V06(instance):
 
     expected = (m3/48 + m21*3/16 + m111*3/4 + m2*3*sp.pi**2/2 + m11*6*sp.pi**2 +
                 m1*26*sp.pi**4 + 244*sp.pi**6/3).expand()
-    computed = instance(g=0,n=6)
+    computed = instance(g=0,n=6).as_expr()
+    
     assert computed.equals(expected), "Test failed for (g,n) = (0,6)"
     
 def test_V05(instance):
@@ -45,7 +46,8 @@ def test_V05(instance):
     m1  = utils.m([1], L)
     
     expected = (m2/8 + m11/2 + m1*3*sp.pi**2 + 10*sp.pi**4).expand()
-    computed = instance(g=0,n=5)
+    computed = instance(g=0,n=5).as_expr()
+    
     assert computed.equals(expected), "Test failed for (g,n) = (0,5)"
 
 def test_V04(instance):
@@ -53,7 +55,8 @@ def test_V04(instance):
     m1 = utils.m([1], L)
     
     expected = (m1/2 + 2*sp.pi**2).expand()
-    computed = instance(g=0, n=4)
+    computed = instance(g=0, n=4).as_expr()
+    
     assert computed.equals(expected), "Test failed for (g,n) = (0,4)"
 
 def test_V13(instance):
@@ -67,7 +70,8 @@ def test_V13(instance):
     
     expected = (m3/1152 + m21/192 + m111/96 + m2*sp.pi**2/24 + 
                m11*sp.pi**2/8 + m1*13*sp.pi**4/24 + 14*sp.pi**6/9).expand()
-    computed = instance(g=1,n=3)
+    computed = instance(g=1,n=3).as_expr()
+    
     assert computed.equals(expected), "Test failed for (g,n) = (1,3)"
 
 def test_V12(instance):
@@ -77,7 +81,7 @@ def test_V12(instance):
     m1  = utils.m([1], L)
     
     expected = (m2/192 + m11/96 + m1*sp.pi**2/12 +sp.pi**4 / 4).expand()
-    computed = instance(g=1, n=2)
+    computed = instance(g=1, n=2).as_expr()
     
     #print(expected)
     #print(computed)
@@ -100,7 +104,8 @@ def test_V14(instance):
     expected = (m4/9216 + m31/768 + m22/384 + m211/128 + m1111/64 + m3*7*sp.pi**2/576 
                 + m21*sp.pi**2/12 + m111*sp.pi**2/4 + m2*41*sp.pi**4/96 + m11*17*sp.pi**4/12 + 
                 m1*187*sp.pi**6/36 + 529*sp.pi**8/36).expand()
-    computed = instance(g=1, n=4)
+    computed = instance(g=1, n=4).as_expr()
+    
     assert computed.equals(expected), "Test failed for (g,n) = (1,4)"
 
 def test_calculator():

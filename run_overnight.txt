@@ -1,0 +1,19 @@
+
+# For loop in fish:
+
+    ❯ for i in 1 2 3; echo $i ; end 
+
+
+#  Run for n=1, g=8,...,14
+
+❯ for i in 7 8 9 10 11 12 13 14 15 16 17 18 19 20; python3 main.py -n 1 -g $i -io mytable.pkl ; end 
+
+
+# Start time: Dec. 3 20:00 (exactly)
+# Failed...
+
+
+
+
+
+# new run: Dec. 4 10:35
