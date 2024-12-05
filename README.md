@@ -38,6 +38,7 @@ H(x, y) = \frac{1}{1 + \exp\left(\frac{x+y}{2}\right)} + \frac{1}{1 + \exp\left(
 - Fix this readme
 - Prettier code
 - Make more efficient
+- (tried using sp.Poly instead of general expressions - turned out a bit messy?)
 - Better documentation
 ## References
  [1] Mirzakhani, M. Simple geodesics and Weil-Petersson volumes of moduli spaces of bordered Riemann surfaces. Invent. math. 167, 179–222 (2007). https://doi.org/10.1007/s00222-006-0013-2
