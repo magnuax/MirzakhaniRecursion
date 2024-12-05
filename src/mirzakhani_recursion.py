@@ -9,7 +9,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 class WeilPetersonTable:
-    def __init__(self, pickled_table):        
+    def __init__(self, pickled_table, exact=True):
+        if exact:
+            self.domain = sp.QQ_I[sp.pi]
+        else:
+            self.domain = sp.CC
+               
         self.load_table(pickled_table)
 
     def load_table(self, filename):
@@ -24,8 +29,10 @@ class WeilPetersonTable:
             pickle.dump(self.table, file)
     
     def _check_table(self, g, n):
+        L = [sp.Symbol(f"L{i}", positive=True) for i in range(1, n+1)]
         try:
-            V = self.table[f"g={g}"][f"n={n}"]
+            V = sp.Poly(self.table[f"g={g}"][f"n={n}"], L, domain=self.domain)
+            
             if V is None:
                 return V, False
             else:
@@ -48,10 +55,10 @@ class WeilPetersonTable:
         L1 = sp.Symbol("L1", positive=True)
 
         V_table = {
-            "g=0": {"n=3": sp.Poly(sp.Integer(1), L1), 
-                    "n=2": sp.Poly(sp.Integer(0), L1), 
-                    "n=1": sp.Poly(sp.Integer(0), L1)},
-            "g=1": {"n=1": sp.Poly(L1**2 / 48 + sp.pi**2 / 12)}}
+            "g=0": {"n=3": sp.Poly(sp.Integer(1), L1, domain=self.domain), 
+                    "n=2": sp.Poly(sp.Integer(0), L1, domain=self.domain), 
+                    "n=1": sp.Poly(sp.Integer(0), L1, domain=self.domain)},
+            "g=1": {"n=1": sp.Poly(L1**2 / 48 + sp.pi**2 / 12, domain=self.domain)}}
 
         with open(filename, "wb") as f:
             pickle.dump(V_table, f)
@@ -78,9 +85,9 @@ class WeilPetersonCalculator(WeilPetersonTable):
         if self.exact:
             self.factorial = sp.factorial
             self.zeta = sp.zeta
-            self.domain = "QQ"
+            self.domain = sp.QQ_I[sp.pi]
         else:
-            self.domain = "RR"
+            self.domain = sp.CC
             self.factorial = scipy.special.factorial
             self.zeta = scipy.special.zeta
     
@@ -182,6 +189,9 @@ class WeilPetersonCalculator(WeilPetersonTable):
                     
                     if not found2:
                         V2 = self.calculate_V(g2, n2+1)
+                    
+                    V1 = V1.as_expr()
+                    V2 = V2.as_expr()
                     
                     V1 = V1.subs({L1: x})      
                     V1 = V1.subs({old: new for old, new in zip(self.L_list[1:n1+1], L_I)}, simultaneous=True)
@@ -322,9 +332,14 @@ class WeilPetersonCalculator(WeilPetersonTable):
         if not found:
             V_next = self.calculate_V(g, n+1)
         
+        #V_ne = sp.Poly(V_next, self.L_list[:n+1], domain=self.domain)
         dilaton_lhs = V_next.diff(self.L_list[n]).subs({self.L_list[n]: 2*sp.pi*sp.I})
+
+        V, remainder = sp.div(dilaton_lhs, 2*sp.pi*sp.I * (2*g - 2 + n) )
         
-        V = dilaton_lhs / (2*sp.pi*sp.I* (2*g - 2 + n) )
+        if remainder:
+            logger.warning(f"CRITICAL ERROR - ({g},{n}) Remainder in dilaton equation: {remainder}")
+        
         return V        
     
     def calculate_V(self, g, n):#, L_list):
@@ -341,13 +356,12 @@ class WeilPetersonCalculator(WeilPetersonTable):
             # Apply dilaton equation if n=0
             elif n==0:
                 logger.info(f". Applying Dilaton equation...")
-                V = sp.Poly(self._apply_dilaton_equation(g, n), domain=self.domain)
-
+                V = self._apply_dilaton_equation(g, n)
+                
             # Otherwise, use Mirzakhani's recursion
             else:
                 logger.info(f"⋅ Applying Mirzakhani's recursion...")
                 integrand = sp.Poly(self._apply_mirzakhanis_recursion(g, n), domain=self.domain)
-                integrand = integrand
                 
                 T1 = time.time()
                 logger.info(f"  (took  {T1-T0:.2f} s)")
@@ -355,7 +369,7 @@ class WeilPetersonCalculator(WeilPetersonTable):
                 logger.info(f"⋅ Integrating result...")
 
                 V, remainder = sp.div(integrand.integrate(L1), 2*L1)#.div(2*L1)# / (2*L1)#sp.integrate(integrand, L1) / ( 2*L1 )
-
+                V = sp.Poly(V, self.L_list[:n+1], domain=self.domain)
                 if remainder:
                     logger.warning(f"CRITICAL ERROR - ({g},{n}) Remainder in division: {remainder}")
 

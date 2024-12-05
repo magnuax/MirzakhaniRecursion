@@ -6,10 +6,12 @@ with open("data/mytable_poly.pkl", "rb") as file:
     V = pickle.load(file)
     
 
+domain = 'QQ'
+
 for g_key in V.keys():
     for n_key in V[g_key].keys():
         print(g_key, n_key)
-        V[g_key][n_key] = sp.Poly(V[g_key][n_key])
+        V[g_key][n_key] = sp.Poly(V[g_key][n_key], domain=domain)
 
 
 with open("mytable_poly_fix.pkl", "wb") as file:
