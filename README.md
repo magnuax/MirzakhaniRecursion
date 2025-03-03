@@ -1,7 +1,7 @@
 # MirzakhaniRecursion
  
  
-Implements a recursive algorithm for calculating Weil-Peterson volumes, using Mirzakhani's recursion relations (see [1]). 
+Implements a recursive algorithm for calculating Weil-Peterson volumes in SymPy, using Mirzakhani's recursion relations (see [1]). 
 Mostly following the procedure shown in section 4. of [2]. For the cases with no boundaries, the Dilaton equation is used instead (Theorem 22 in [2]).
 Probably not the most efficient implementation, but it works and it was a fun project.
 
